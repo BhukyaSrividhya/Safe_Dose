@@ -1,0 +1,67 @@
+// firestore.rules
+// ─────────────────────────────────────────────────────────────
+// Firestore Security Rules for SafeDose
+//
+// Key rules:
+//  - Users can only read/write their own profile
+//  - Patients own their medications and dose logs
+//  - Caregivers can READ (not write) the patient's data
+//    if their caregiverForId matches the patient's UID
+//  - Cloud Functions (admin) bypass all rules
+// ─────────────────────────────────────────────────────────────
+
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ── User profiles ───────────────────────────────────────
+    match /users/{userId} {
+      // User can read/write their own profile
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+
+      // Caregiver can read the patient profile they are linked to
+      allow read: if request.auth != null
+        && exists(/databases/$(database)/documents/users/$(request.auth.uid))
+        && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.caregiverForId == userId;
+
+      // ── Medications sub-collection ──────────────────────
+      match /medications/{medicationId} {
+        // Patient can manage their own medications
+        allow read, write: if request.auth != null && request.auth.uid == userId;
+
+        // Caregiver can read medications for their linked patient
+        allow read: if request.auth != null
+          && exists(/databases/$(database)/documents/users/$(request.auth.uid))
+          && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.caregiverForId == userId;
+
+        // Caregiver can also write medications (remote schedule update - US-07)
+        allow write: if request.auth != null
+          && exists(/databases/$(database)/documents/users/$(request.auth.uid))
+          && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.caregiverForId == userId;
+      }
+
+      // ── Dose logs sub-collection ────────────────────────
+      match /doseLogs/{doseLogId} {
+        // Patient can read/write their own logs
+        allow read, write: if request.auth != null && request.auth.uid == userId;
+
+        // Caregiver can read logs for adherence reports (US-06, US-09)
+        allow read: if request.auth != null
+          && exists(/databases/$(database)/documents/users/$(request.auth.uid))
+          && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.caregiverForId == userId;
+      }
+
+      // ── Caregiver alerts sub-collection ────────────────
+      match /caregiverAlerts/{alertId} {
+        // Only the patient (or Cloud Functions via admin) can write alerts
+        allow write: if request.auth != null && request.auth.uid == userId;
+
+        // Caregiver can read their patient's alerts
+        allow read: if request.auth != null
+          && exists(/databases/$(database)/documents/users/$(request.auth.uid))
+          && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.caregiverForId == userId;
+      }
+    }
+  }
+}
