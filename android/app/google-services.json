@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "500805018313",
+    "project_id": "safedose-1a2dd",
+    "storage_bucket": "safedose-1a2dd.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:500805018313:android:dfc7293908ed74c8ce2318",
+        "android_client_info": {
+          "package_name": "com.safedose"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBg2kb0AoGkh9GcCIGzkF0peWb0EWBEIA4"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
